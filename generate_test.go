@@ -284,6 +284,109 @@ func containsStr(s, substr string) bool {
 		}())
 }
 
+// ---- formatObsidianText ----
+
+func TestFormatObsidianText(t *testing.T) {
+	w := GeneratedWorkout{
+		Day: "1", Label: "Saturday",
+		Name: "Upper Body Hypertrophy — Push Primary",
+		Seed: "abc",
+		Exercises: []GeneratedExercise{
+			{
+				SlotIndex: 0, SlotName: "Secondary Push", Method: "ME",
+				ExerciseName: "Incline Bench Press", HasPR: true, MethodNote: "Ramping",
+				WarmupSets: []GeneratedSet{
+					{Label: "Warm-up Set 1", TargetPct: 0.75, TargetLbs: 125, TargetReps: 5},
+					{Label: "Warm-up Set 2", TargetPct: 0.875, TargetLbs: 145, TargetReps: 3},
+				},
+				WorkSets: []GeneratedSet{
+					{Label: "Work Set 1", TargetPct: 0.90, TargetLbs: 165, TargetReps: 3},
+					{Label: "Work Set 2", TargetPct: 0.90, TargetLbs: 165, TargetReps: 3},
+					{Label: "Work Set 3", TargetPct: 0.90, TargetLbs: 165, TargetReps: 3},
+				},
+			},
+			{
+				SlotIndex: 1, SlotName: "Braced Push", Method: "HYP",
+				ExerciseName: "Machine Chest Press", HasPR: true,
+				MethodNote: "Hypertrophy focus. Aim for 0-2 Reps in Reserve (RIR).",
+				WorkSets: []GeneratedSet{
+					{Label: "Work Set 1", TargetPct: 0.70, TargetLbs: 160, TargetReps: 10},
+					{Label: "Work Set 2", TargetPct: 0.70, TargetLbs: 160, TargetReps: 10},
+					{Label: "Work Set 3", TargetPct: 0.70, TargetLbs: 160, TargetReps: 10},
+				},
+			},
+		},
+		Endurance: &Endurance{Type: "Sprint+MLSS", Description: "Sprint + MLSS combo workout"},
+	}
+
+	text := formatObsidianText(w)
+
+	mustContain := []string{
+		"Day 1 — Saturday",
+		"Lift: Upper Body Hypertrophy — Push Primary",
+		"Incline Bench Press: Ramping",
+		"Warm-up Set 1",
+		"target: 75% 1RM (125 lbs) x 5",
+		"actual:",
+		"Work Set 1",
+		"target: 90% 1RM (165 lbs) x 3",
+		"Machine Chest Press: Hypertrophy focus. Aim for 0-2 Reps in Reserve (RIR).",
+		"target: 70% 1RM (160 lbs) x 10",
+		"---",
+		"Endurance: Sprint+MLSS",
+		"Sprint + MLSS combo workout",
+		"User notes:",
+	}
+
+	for _, s := range mustContain {
+		if !containsStr(text, s) {
+			t.Errorf("output missing expected string: %q\n\nFull output:\n%s", s, text)
+		}
+	}
+}
+
+func TestFormatObsidianTextMissingPR(t *testing.T) {
+	w := GeneratedWorkout{
+		Day: "1", Label: "Saturday", Name: "Test",
+		Exercises: []GeneratedExercise{
+			{
+				SlotIndex: 0, SlotName: "Secondary Push", Method: "ME",
+				ExerciseName: "Larsen Press", HasPR: false, MethodNote: "Ramping",
+				WorkSets: []GeneratedSet{{Label: "Work Set 1"}},
+			},
+		},
+	}
+	text := formatObsidianText(w)
+	if !containsStr(text, "No PR recorded") {
+		t.Errorf("expected 'No PR recorded' for missing PR\n\nFull output:\n%s", text)
+	}
+}
+
+func TestFormatObsidianTextSuperset(t *testing.T) {
+	arms := "arms"
+	w := GeneratedWorkout{
+		Day: "1", Label: "Saturday", Name: "Test",
+		Exercises: []GeneratedExercise{
+			{
+				SlotIndex: 0, SlotName: "Focused Push", Method: "HYP",
+				ExerciseName: "Tricep Pushdown", SupersetGroup: &arms, HasPR: true,
+				MethodNote: "Hypertrophy focus. Aim for 0-2 Reps in Reserve (RIR).",
+				WorkSets: []GeneratedSet{{Label: "Work Set 1", TargetPct: 0.70, TargetLbs: 55, TargetReps: 12}},
+			},
+			{
+				SlotIndex: 1, SlotName: "Focused Pull", Method: "HYP",
+				ExerciseName: "Preacher Curls", SupersetGroup: &arms, HasPR: true,
+				MethodNote: "Hypertrophy focus. Aim for 0-2 Reps in Reserve (RIR).",
+				WorkSets: []GeneratedSet{{Label: "Work Set 1", TargetPct: 0.75, TargetLbs: 55, TargetReps: 8}},
+			},
+		},
+	}
+	text := formatObsidianText(w)
+	if !containsStr(text, "Superset: Focused Push/Focused Pull") {
+		t.Errorf("expected superset header\n\nFull output:\n%s", text)
+	}
+}
+
 // ---- isValidChoice ----
 
 func TestIsValidChoice(t *testing.T) {

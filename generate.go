@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand/v2"
+	"strings"
 )
 
 // pickExercise deterministically selects an exercise using SHA256 hash of
@@ -142,4 +143,92 @@ func generateWorkout(dayNum string, day ProgramDay, prs PRs, seed string, overri
 		Exercises: exercises,
 		Endurance: day.Endurance,
 	}
+}
+
+// formatObsidianText renders a GeneratedWorkout as plain text for Obsidian.
+func formatObsidianText(w GeneratedWorkout) string {
+	var b strings.Builder
+
+	b.WriteString(fmt.Sprintf("Day %s — %s\n", w.Day, w.Label))
+	b.WriteString(fmt.Sprintf("Lift: %s\n", w.Name))
+
+	openSuperset := ""
+
+	for i, ex := range w.Exercises {
+		currentGroup := ""
+		if ex.SupersetGroup != nil {
+			currentGroup = *ex.SupersetGroup
+		}
+
+		if currentGroup != "" && currentGroup != openSuperset {
+			b.WriteString("\n")
+			names := supersetSlotNames(w.Exercises, currentGroup)
+			b.WriteString(fmt.Sprintf("Superset: %s\n", strings.Join(names, "/")))
+			openSuperset = currentGroup
+		} else if currentGroup == "" && openSuperset != "" {
+			openSuperset = ""
+		}
+
+		if currentGroup == "" {
+			b.WriteString("\n")
+		}
+
+		if ex.HasPR {
+			b.WriteString(fmt.Sprintf("%s: %s\n", ex.ExerciseName, ex.MethodNote))
+		} else {
+			b.WriteString(fmt.Sprintf("%s: %s — No PR recorded, set target manually\n", ex.ExerciseName, ex.MethodNote))
+		}
+
+		for _, s := range ex.WarmupSets {
+			b.WriteString(fmt.Sprintf("%s\n", s.Label))
+			if ex.HasPR {
+				b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPct*100), s.TargetLbs, s.TargetReps))
+			} else {
+				b.WriteString("target:\n")
+			}
+			b.WriteString("actual:\n")
+		}
+
+		for _, s := range ex.WorkSets {
+			b.WriteString(fmt.Sprintf("%s\n", s.Label))
+			if ex.HasPR {
+				b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPct*100), s.TargetLbs, s.TargetReps))
+			} else {
+				b.WriteString("target:\n")
+			}
+			b.WriteString("actual:\n")
+		}
+
+		if currentGroup != "" && i < len(w.Exercises)-1 {
+			nextGroup := ""
+			if w.Exercises[i+1].SupersetGroup != nil {
+				nextGroup = *w.Exercises[i+1].SupersetGroup
+			}
+			if nextGroup == currentGroup {
+				b.WriteString("\n")
+			}
+		}
+	}
+
+	if w.Endurance != nil && w.Endurance.Type != "None" && w.Endurance.Type != "Rest" {
+		b.WriteString("\n---\n")
+		b.WriteString(fmt.Sprintf("Endurance: %s\n", w.Endurance.Type))
+		b.WriteString(w.Endurance.Description)
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\nUser notes:\n")
+
+	return b.String()
+}
+
+// supersetSlotNames collects the SlotName of all exercises in a superset group.
+func supersetSlotNames(exercises []GeneratedExercise, group string) []string {
+	var names []string
+	for _, ex := range exercises {
+		if ex.SupersetGroup != nil && *ex.SupersetGroup == group {
+			names = append(names, ex.SlotName)
+		}
+	}
+	return names
 }
