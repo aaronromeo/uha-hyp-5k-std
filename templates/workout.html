@@ -1,36 +1,150 @@
 <!DOCTYPE html>
-<html>
-<head><title>Workout</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day {{.Workout.Day}} — {{.Workout.Label}}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; padding: 20px; max-width: 700px; margin: 0 auto; }
+    h1 { font-size: 1.3rem; margin-bottom: 4px; }
+    .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 16px; }
+    .nav { margin-bottom: 20px; font-size: 0.9rem; }
+    .nav a { color: #0066cc; text-decoration: none; margin-right: 16px; }
+    .nav a:hover { text-decoration: underline; }
+    .exercise { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .exercise-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+    .exercise-name { font-weight: bold; font-size: 1.05rem; }
+    .exercise-meta { font-size: 0.8rem; color: #888; }
+    .swap-select { font-size: 0.85rem; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .set { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.9rem; border-bottom: 1px solid #f0f0f0; }
+    .set:last-child { border-bottom: none; }
+    .set-label { color: #666; }
+    .set-target { font-weight: 500; }
+    .warmup .set-target { color: #999; }
+    .superset-header { background: #f0f0f0; border-radius: 8px; padding: 8px 16px; margin-bottom: 4px; font-size: 0.9rem; font-weight: 600; color: #555; }
+    .superset-group { margin-bottom: 12px; }
+    .superset-group .exercise { border-left: 3px solid #0066cc; margin-bottom: 4px; }
+    .endurance { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .endurance h2 { font-size: 1.1rem; margin-bottom: 8px; }
+    .endurance pre { white-space: pre-wrap; font-family: inherit; font-size: 0.9rem; color: #555; }
+    .output-section { margin-top: 24px; }
+    .output-section h2 { font-size: 1.1rem; margin-bottom: 8px; }
+    textarea { width: 100%; font-family: monospace; font-size: 0.85rem; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: #fff; resize: vertical; }
+    .copy-btn { margin-top: 8px; padding: 8px 20px; background: #0066cc; color: #fff; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
+    .copy-btn:hover { background: #0052a3; }
+    .copy-btn.copied { background: #28a745; }
+    .no-pr { color: #cc6600; font-style: italic; font-size: 0.85rem; }
+  </style>
+</head>
 <body>
-<h1>Day {{.Workout.Day}} — {{.Workout.Label}}: {{.Workout.Name}}</h1>
-<a href="/workout?day={{.Workout.Day}}">Re-roll All</a> | <a href="/workout?day={{.Workout.Day}}&seed={{.Workout.Seed}}">Permalink</a> | <a href="/">Back</a>
-{{range .Workout.Exercises}}
-<div>
-<strong>{{.ExerciseName}}</strong> — {{.SlotName}} ({{.Method}})
-{{if gt (len .Choices) 1}}
-<select onchange="window.location.href=this.value">
-{{$w := $.Workout}}{{$o := $.Overrides}}{{$idx := .SlotIndex}}
-{{range .Choices}}
-<option value="/workout?day={{$w.Day}}&seed={{$w.Seed}}{{range $k, $v := $o}}&s{{$k}}={{$v}}{{end}}&s{{$idx}}={{.}}" {{if eq . (index $w.Exercises $idx).ExerciseName}}selected{{end}}>{{.}}</option>
-{{end}}
-</select>
-{{end}}
-{{range .WarmupSets}}
-<div>{{.Label}}: {{.TargetLbs}} lbs x {{.TargetReps}}</div>
-{{end}}
-{{range .WorkSets}}
-<div>{{.Label}}: {{.TargetLbs}} lbs x {{.TargetReps}}</div>
-{{end}}
-</div>
-{{end}}
-<textarea id="workout-output" readonly rows="30" cols="60">{{.ObsidianText}}</textarea>
-<button onclick="copyWorkout()">Copy</button>
-<script>
-function copyWorkout() {
-  const textarea = document.getElementById('workout-output');
-  textarea.select();
-  navigator.clipboard.writeText(textarea.value);
-}
-</script>
+  <div class="nav">
+    <a href="/">Back</a>
+    <a href="/workout?day={{.Workout.Day}}">Re-roll All</a>
+    <a href="/workout?day={{.Workout.Day}}&seed={{.Workout.Seed}}">Permalink</a>
+  </div>
+
+  <h1>Day {{.Workout.Day}} — {{.Workout.Label}}</h1>
+  <div class="subtitle">{{.Workout.Name}}</div>
+
+  {{- $workout := .Workout -}}
+  {{- $overrides := .Overrides -}}
+  {{- $prevGroup := "" -}}
+
+  {{range $i, $ex := .Workout.Exercises}}
+    {{- $currentGroup := "" -}}
+    {{- if $ex.SupersetGroup}}{{$currentGroup = deref $ex.SupersetGroup}}{{end -}}
+
+    {{if and (ne $currentGroup "") (ne $currentGroup $prevGroup)}}
+      {{if ne $prevGroup ""}}</div>{{end}}
+      <div class="superset-group">
+      <div class="superset-header">Superset: {{supersetNames $workout.Exercises $currentGroup}}</div>
+    {{else if and (eq $currentGroup "") (ne $prevGroup "")}}
+      </div>
+    {{end}}
+
+    <div class="exercise">
+      <div class="exercise-header">
+        <div>
+          <span class="exercise-name">{{$ex.ExerciseName}}</span>
+          <span class="exercise-meta">{{$ex.SlotName}} — {{$ex.Method}}</span>
+        </div>
+        {{if gt (len $ex.Choices) 1}}
+        <select class="swap-select" onchange="window.location.href=this.value">
+          {{range $ex.Choices}}
+          <option value="{{swapURL $workout.Day $workout.Seed $overrides $ex.SlotIndex .}}"{{if eq . $ex.ExerciseName}} selected{{end}}>{{.}}</option>
+          {{end}}
+        </select>
+        {{end}}
+      </div>
+
+      {{if not $ex.HasPR}}
+      <div class="no-pr">No PR recorded — set target manually</div>
+      {{end}}
+
+      {{if $ex.WarmupSets}}
+      <div class="warmup">
+        {{range $ex.WarmupSets}}
+        <div class="set">
+          <span class="set-label">{{.Label}}</span>
+          <span class="set-target">{{.TargetLbs}} lbs x {{.TargetReps}}</span>
+        </div>
+        {{end}}
+      </div>
+      {{end}}
+
+      <div class="work">
+        {{range $ex.WorkSets}}
+        <div class="set">
+          <span class="set-label">{{.Label}}</span>
+          <span class="set-target">{{if $ex.HasPR}}{{.TargetLbs}} lbs x {{.TargetReps}}{{else}}—{{end}}</span>
+        </div>
+        {{end}}
+      </div>
+
+      {{if $ex.MethodNote}}
+      <div class="exercise-meta" style="margin-top:8px">{{$ex.MethodNote}}</div>
+      {{end}}
+    </div>
+
+    {{- if $ex.SupersetGroup}}{{$prevGroup = deref $ex.SupersetGroup}}{{else}}{{$prevGroup = ""}}{{end -}}
+  {{end}}
+
+  {{if ne $prevGroup ""}}</div>{{end}}
+
+  {{if and .Workout.Endurance (ne .Workout.Endurance.Type "None") (ne .Workout.Endurance.Type "Rest")}}
+  <div class="endurance">
+    <h2>Endurance: {{.Workout.Endurance.Type}}</h2>
+    <pre>{{.Workout.Endurance.Description}}</pre>
+  </div>
+  {{end}}
+
+  {{if and .Workout.Endurance (eq .Workout.Endurance.Type "Rest")}}
+  <div class="endurance">
+    <h2>Rest Day</h2>
+    <pre>{{.Workout.Endurance.Description}}</pre>
+  </div>
+  {{end}}
+
+  <div class="output-section">
+    <h2>Obsidian Output</h2>
+    <textarea id="workout-output" readonly rows="{{textareaRows .ObsidianText}}">{{.ObsidianText}}</textarea>
+    <button class="copy-btn" onclick="copyWorkout(this)">Copy to Clipboard</button>
+  </div>
+
+  <script>
+  function copyWorkout(btn) {
+    var ta = document.getElementById('workout-output');
+    ta.select();
+    navigator.clipboard.writeText(ta.value).then(function() {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(function() {
+        btn.textContent = 'Copy to Clipboard';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+  </script>
 </body>
 </html>

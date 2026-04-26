@@ -1,10 +1,30 @@
 <!DOCTYPE html>
-<html>
-<head><title>Workout Generator</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workout Generator</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; padding: 20px; max-width: 600px; margin: 0 auto; }
+    h1 { margin-bottom: 20px; font-size: 1.5rem; }
+    .day-list { display: flex; flex-direction: column; gap: 10px; }
+    .day-link { display: block; padding: 16px; background: #fff; border: 1px solid #ddd; border-radius: 8px; text-decoration: none; color: #333; transition: background 0.15s; }
+    .day-link:hover { background: #e8f4fd; }
+    .day-num { font-weight: bold; font-size: 1.1rem; }
+    .day-name { color: #666; font-size: 0.9rem; margin-top: 2px; }
+    .rest { opacity: 0.5; }
+  </style>
+</head>
 <body>
-<h1>Pick Your Day</h1>
-{{range .}}
-<a href="/workout?day={{.Num}}">Day {{.Num}} — {{.Label}}: {{.Name}}</a><br>
-{{end}}
+  <h1>Workout Generator</h1>
+  <div class="day-list">
+    {{range .}}
+    <a href="/workout?day={{.Num}}" class="day-link{{if eq .Name "Rest"}} rest{{end}}">
+      <div class="day-num">Day {{.Num}} — {{.Label}}</div>
+      <div class="day-name">{{.Name}}</div>
+    </a>
+    {{end}}
+  </div>
 </body>
 </html>

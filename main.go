@@ -33,7 +33,7 @@ func main() {
 		log.Fatalf("failed to load prs.json: %v", err)
 	}
 
-	tmpl, err := template.ParseFS(templateFS, "templates/*.html")
+	tmpl, err := template.New("").Funcs(templateFuncs()).ParseFS(templateFS, "templates/*.html")
 	if err != nil {
 		log.Fatalf("failed to parse templates: %v", err)
 	}

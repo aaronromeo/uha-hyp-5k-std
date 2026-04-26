@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -89,7 +90,42 @@ func generateSeed() string {
 	return hex.EncodeToString(b)
 }
 
+// templateFuncs returns the FuncMap for workout templates.
+func templateFuncs() template.FuncMap {
+	return template.FuncMap{
+		"swapURL": func(day, seed string, overrides map[int]string, slotIndex int, exercise string) string {
+			params := url.Values{}
+			params.Set("day", day)
+			params.Set("seed", seed)
+			for k, v := range overrides {
+				if k != slotIndex {
+					params.Set(fmt.Sprintf("s%d", k), v)
+				}
+			}
+			params.Set(fmt.Sprintf("s%d", slotIndex), exercise)
+			return "/workout?" + params.Encode()
+		},
+		"deref": func(s *string) string {
+			if s == nil {
+				return ""
+			}
+			return *s
+		},
+		"supersetNames": func(exercises []GeneratedExercise, group string) string {
+			names := supersetSlotNames(exercises, group)
+			return strings.Join(names, "/")
+		},
+		"textareaRows": func(text string) int {
+			lines := strings.Count(text, "\n") + 1
+			if lines < 10 {
+				return 10
+			}
+			return lines + 2
+		},
+	}
+}
+
 // loadTemplatesFromDir parses templates from a directory.
 func loadTemplatesFromDir(dir string) (*template.Template, error) {
-	return template.ParseGlob(dir + "/*.html")
+	return template.New("").Funcs(templateFuncs()).ParseGlob(dir + "/*.html")
 }
