@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+<head><title>Workout Generator</title></head>
+<body>
+<h1>Pick Your Day</h1>
+{{range .}}
+<a href="/workout?day={{.Num}}">Day {{.Num}} — {{.Label}}: {{.Name}}</a><br>
+{{end}}
+</body>
+</html>

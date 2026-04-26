@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head><title>Workout</title></head>
+<body>
+<h1>Day {{.Workout.Day}} — {{.Workout.Label}}: {{.Workout.Name}}</h1>
+<a href="/workout?day={{.Workout.Day}}">Re-roll All</a> | <a href="/workout?day={{.Workout.Day}}&seed={{.Workout.Seed}}">Permalink</a> | <a href="/">Back</a>
+{{range .Workout.Exercises}}
+<div>
+<strong>{{.ExerciseName}}</strong> — {{.SlotName}} ({{.Method}})
+{{if gt (len .Choices) 1}}
+<select onchange="window.location.href=this.value">
+{{$w := $.Workout}}{{$o := $.Overrides}}{{$idx := .SlotIndex}}
+{{range .Choices}}
+<option value="/workout?day={{$w.Day}}&seed={{$w.Seed}}{{range $k, $v := $o}}&s{{$k}}={{$v}}{{end}}&s{{$idx}}={{.}}" {{if eq . (index $w.Exercises $idx).ExerciseName}}selected{{end}}>{{.}}</option>
+{{end}}
+</select>
+{{end}}
+{{range .WarmupSets}}
+<div>{{.Label}}: {{.TargetLbs}} lbs x {{.TargetReps}}</div>
+{{end}}
+{{range .WorkSets}}
+<div>{{.Label}}: {{.TargetLbs}} lbs x {{.TargetReps}}</div>
+{{end}}
+</div>
+{{end}}
+<textarea id="workout-output" readonly rows="30" cols="60">{{.ObsidianText}}</textarea>
+<button onclick="copyWorkout()">Copy</button>
+<script>
+function copyWorkout() {
+  const textarea = document.getElementById('workout-output');
+  textarea.select();
+  navigator.clipboard.writeText(textarea.value);
+}
+</script>
+</body>
+</html>
