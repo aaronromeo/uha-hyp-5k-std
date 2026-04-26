@@ -1,0 +1,309 @@
+{
+  "1": {
+    "label": "Saturday",
+    "name": "Upper Body Hypertrophy — Push Primary",
+    "strength": [
+      {
+        "name": "Secondary Push",
+        "method": "ME",
+        "sets": 3,
+        "reps": {"min": 1, "max": 5},
+        "load_pct": {"min": 0.90, "max": 1.00},
+        "warmup_sets": 2,
+        "choices": ["Larsen Press", "Incline Bench Press", "Close-Grip Bench Press", "JM Press", "Seated DB Press", "Arnold Press"],
+        "superset_group": null
+      },
+      {
+        "name": "Braced Push",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 6, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.80},
+        "warmup_sets": 0,
+        "choices": ["Smith Machine Press", "Machine Chest Press"],
+        "superset_group": null
+      },
+      {
+        "name": "Braced Pull",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 6, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.80},
+        "warmup_sets": 0,
+        "choices": ["Chest Supported Row", "Lat Pulldown", "Close Grip Lat Pulldown", "Cable Row"],
+        "superset_group": null
+      },
+      {
+        "name": "Focused Push",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.75},
+        "warmup_sets": 0,
+        "choices": ["Tricep Pushdown", "Lateral Raise", "Pec Deck"],
+        "superset_group": "arms"
+      },
+      {
+        "name": "Focused Pull",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.75},
+        "warmup_sets": 0,
+        "choices": ["Preacher Curls", "Spider Curls", "Rear Delt Machine"],
+        "superset_group": "arms"
+      },
+      {
+        "name": "Focused Push",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.75},
+        "warmup_sets": 0,
+        "choices": ["Dumbbell Lateral Raise", "Pec Deck"],
+        "superset_group": null
+      }
+    ],
+    "endurance": {
+      "type": "Sprint+MLSS",
+      "description": "Combined Sprint + MLSS+ session (target 45-50 min total).\nSprint warm-up, remove Sprint cooldown, remove MLSS+ warm-up, use MLSS+ cooldown."
+    }
+  },
+  "2": {
+    "label": "Sunday",
+    "name": "Lower Body Hypertrophy — Hinge Primary",
+    "strength": [
+      {
+        "name": "Secondary Hinge",
+        "method": "DE",
+        "sets": 5,
+        "reps": {"min": 2, "max": 4},
+        "load_pct": {"min": 0.70, "max": 0.80},
+        "warmup_sets": 2,
+        "choices": ["Romanian Deadlift", "Stiff-Legged Deadlift", "Good Morning", "Trap Bar Romanian Deadlift"],
+        "superset_group": null
+      },
+      {
+        "name": "Secondary Hinge",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.80},
+        "warmup_sets": 0,
+        "choices": ["Romanian Deadlift", "Stiff-Legged Deadlift", "Good Morning", "Dumbbell RDL"],
+        "superset_group": null
+      },
+      {
+        "name": "Braced Hinge",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.80},
+        "warmup_sets": 0,
+        "choices": ["GHD Back Extension"],
+        "superset_group": "hinge-push"
+      },
+      {
+        "name": "Braced Lower Push",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.80},
+        "warmup_sets": 0,
+        "choices": ["Hack Squat", "Leg Press"],
+        "superset_group": "hinge-push"
+      },
+      {
+        "name": "Focused Hamstring",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.75},
+        "warmup_sets": 0,
+        "choices": ["Leg Extension", "Calf Raise"],
+        "superset_group": null
+      },
+      {
+        "name": "Braced Push (Asymmetrical)",
+        "method": "DE",
+        "sets": 4,
+        "reps": {"min": 2, "max": 4},
+        "load_pct": {"min": 0.70, "max": 0.80},
+        "warmup_sets": 0,
+        "choices": ["Single-Leg Press", "Barbell Split Squat", "Bulgarian Split Squat"],
+        "superset_group": null
+      }
+    ],
+    "endurance": {
+      "type": "None",
+      "description": "No endurance component — strength training only."
+    }
+  },
+  "3": {
+    "label": "Monday",
+    "name": "Plyometric Warmup + Near-Threshold Run",
+    "strength": [],
+    "endurance": {
+      "type": "NT",
+      "description": "NT Option 3:\n1 x 1000m @ 95% with 3-minute rest\n1 x 800m @ 95% with 3-minute rest\n4 x 400m @ 95% with 1:30 rest\n4 x 200m @ 95% with 1-minute rest\n\nPlyometric warmup: 3-4 drills from bounding/ground contact before the run."
+    }
+  },
+  "4": {
+    "label": "Tuesday",
+    "name": "Upper Body Hypertrophy — Pull Primary",
+    "strength": [
+      {
+        "name": "Secondary Pull",
+        "method": "ME",
+        "sets": 3,
+        "reps": {"min": 1, "max": 5},
+        "load_pct": {"min": 0.90, "max": 1.00},
+        "warmup_sets": 2,
+        "choices": ["Kroc Row", "T-Bar Row", "Meadows Row", "DB Pullover"],
+        "superset_group": null
+      },
+      {
+        "name": "Braced Pull",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 6, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.80},
+        "warmup_sets": 0,
+        "choices": ["Chest Supported Row", "Lat Pulldown", "Close Grip Lat Pulldown", "Cable Row"],
+        "superset_group": null
+      },
+      {
+        "name": "Braced Push",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 6, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.80},
+        "warmup_sets": 0,
+        "choices": ["Smith Machine Press", "Machine Chest Press"],
+        "superset_group": null
+      },
+      {
+        "name": "Focused Push",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.75},
+        "warmup_sets": 0,
+        "choices": ["Tricep Pushdown", "Lateral Raise"],
+        "superset_group": "arms"
+      },
+      {
+        "name": "Focused Pull",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.75},
+        "warmup_sets": 0,
+        "choices": ["Preacher Curls", "Spider Curls", "Rear Delt Machine"],
+        "superset_group": "arms"
+      },
+      {
+        "name": "Focused Pull",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.75},
+        "warmup_sets": 0,
+        "choices": ["Rear Delt Machine", "Machine Rear Delt Fly", "Face Pulls"],
+        "superset_group": null
+      }
+    ],
+    "endurance": {
+      "type": "VT1",
+      "description": "25-30 minutes at VT1 pace (7:27/km).\nSimple 5-minute progressive warm-up and 5-minute cool-down."
+    }
+  },
+  "5": {
+    "label": "Wednesday",
+    "name": "Lower Body Hypertrophy — Push Primary",
+    "strength": [
+      {
+        "name": "Secondary Push",
+        "method": "DE",
+        "sets": 5,
+        "reps": {"min": 2, "max": 4},
+        "load_pct": {"min": 0.70, "max": 0.80},
+        "warmup_sets": 2,
+        "choices": ["Back Squat", "Barbell Split Squat", "Forward Lunge", "Reverse Lunge"],
+        "superset_group": null
+      },
+      {
+        "name": "Secondary Hinge",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.80},
+        "warmup_sets": 0,
+        "choices": ["Romanian Deadlift", "Stiff-Legged Deadlift", "Good Morning", "Dumbbell RDL"],
+        "superset_group": null
+      },
+      {
+        "name": "Braced Hinge",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.80},
+        "warmup_sets": 0,
+        "choices": ["GHD Back Extension"],
+        "superset_group": "hinge-push"
+      },
+      {
+        "name": "Braced Lower Push",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 8, "max": 12},
+        "load_pct": {"min": 0.65, "max": 0.80},
+        "warmup_sets": 0,
+        "choices": ["Hack Squat", "Leg Press"],
+        "superset_group": "hinge-push"
+      },
+      {
+        "name": "Focused Quadriceps",
+        "method": "HYP",
+        "sets": 3,
+        "reps": {"min": 10, "max": 15},
+        "load_pct": {"min": 0.60, "max": 0.75},
+        "warmup_sets": 0,
+        "choices": ["Leg Extension", "Calf Raise"],
+        "superset_group": null
+      },
+      {
+        "name": "Braced Push (Asymmetrical)",
+        "method": "SKILL",
+        "sets": 4,
+        "reps": {"min": 3, "max": 5},
+        "load_pct": {"min": 0.75, "max": 0.85},
+        "warmup_sets": 0,
+        "choices": ["Single-Leg Press", "Barbell Split Squat", "Bulgarian Split Squat"],
+        "superset_group": null
+      }
+    ],
+    "endurance": {
+      "type": "None",
+      "description": "No endurance component — strength training only."
+    }
+  },
+  "6": {
+    "label": "Thursday",
+    "name": "Long Slow Distance Run",
+    "strength": [],
+    "endurance": {
+      "type": "LSD",
+      "description": "LSD run — select from Options 1-4 (60-100 minutes).\nUse Standalone Endurance Warm-Up (10-min jog, lunges, Cossack squats) and Cool-Down (8-min jog).\nEmphasize mixed terrain."
+    }
+  },
+  "7": {
+    "label": "Friday",
+    "name": "Rest",
+    "strength": [],
+    "endurance": {
+      "type": "Rest",
+      "description": "Rest day — no training."
+    }
+  }
+}
