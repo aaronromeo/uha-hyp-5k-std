@@ -80,24 +80,36 @@ func TestGenerateWarmupSets_Zero(t *testing.T) {
 }
 
 func TestGenerateWarmupSets_Two(t *testing.T) {
-	sets := generateWarmupSets(2, 165)
-	if len(sets) != 2 {
-		t.Fatalf("expected 2 warmup sets, got %d", len(sets))
-	}
-	// set1: 75% of 165 = 123.75 → 125, 5 reps
-	if sets[0].TargetLbs != 125 {
-		t.Errorf("set 1 weight: expected 125, got %d", sets[0].TargetLbs)
-	}
-	if sets[0].TargetReps != 5 {
-		t.Errorf("set 1 reps: expected 5, got %d", sets[0].TargetReps)
-	}
+    sets := generateWarmupSets(2, 165)
+    if len(sets) != 2 {
+        t.Fatalf("expected 2 warmup sets, got %d", len(sets))
+    }
+    // set1: 75% of 165 = 123.75 → 125, 5 reps
+    if sets[0].TargetLbsMin != 125 {
+        t.Errorf("set 1 weight: expected 125, got %d", sets[0].TargetLbsMin)
+    }
+    if sets[0].TargetLbsMax != 125 {
+        t.Errorf("set 1 weight max: expected 125 (degenerate), got %d", sets[0].TargetLbsMax)
+    }
+    if sets[0].TargetRepsMin != 5 {
+        t.Errorf("set 1 reps: expected 5, got %d", sets[0].TargetRepsMin)
+    }
+    if sets[0].TargetRepsMax != 5 {
+        t.Errorf("set 1 reps max: expected 5 (degenerate), got %d", sets[0].TargetRepsMax)
+    }
 	// set2: 87.5% of 165 = 144.375 → 145, 3 reps
-	if sets[1].TargetLbs != 145 {
-		t.Errorf("set 2 weight: expected 145, got %d", sets[1].TargetLbs)
-	}
-	if sets[1].TargetReps != 3 {
-		t.Errorf("set 2 reps: expected 3, got %d", sets[1].TargetReps)
-	}
+    if sets[1].TargetLbsMin != 145 {
+        t.Errorf("set 2 weight: expected 145, got %d", sets[1].TargetLbsMin)
+    }
+    if sets[1].TargetLbsMax != 145 {
+        t.Errorf("set 2 weight max: expected 145 (degenerate), got %d", sets[1].TargetLbsMax)
+    }
+    if sets[1].TargetRepsMin != 3 {
+        t.Errorf("set 2 reps: expected 3, got %d", sets[1].TargetRepsMin)
+    }
+    if sets[1].TargetRepsMax != 3 {
+        t.Errorf("set 2 reps max: expected 3 (degenerate), got %d", sets[1].TargetRepsMax)
+    }
 }
 
 // ---- generateWorkout ----
@@ -295,25 +307,25 @@ func TestFormatObsidianText(t *testing.T) {
 			{
 				SlotIndex: 0, SlotName: "Secondary Push", Method: "ME",
 				ExerciseName: "Incline Bench Press", HasPR: true, MethodNote: "Ramping",
-				WarmupSets: []GeneratedSet{
-					{Label: "Warm-up Set 1", TargetPct: 0.75, TargetLbs: 125, TargetReps: 5},
-					{Label: "Warm-up Set 2", TargetPct: 0.875, TargetLbs: 145, TargetReps: 3},
-				},
-				WorkSets: []GeneratedSet{
-					{Label: "Work Set 1", TargetPct: 0.90, TargetLbs: 165, TargetReps: 3},
-					{Label: "Work Set 2", TargetPct: 0.90, TargetLbs: 165, TargetReps: 3},
-					{Label: "Work Set 3", TargetPct: 0.90, TargetLbs: 165, TargetReps: 3},
-				},
+                WarmupSets: []GeneratedSet{
+                    {Label: "Warm-up Set 1", TargetPctMin: 0.75, TargetPctMax: 0.75, TargetLbsMin: 125, TargetLbsMax: 125, TargetRepsMin: 5, TargetRepsMax: 5},
+                    {Label: "Warm-up Set 2", TargetPctMin: 0.875, TargetPctMax: 0.875, TargetLbsMin: 145, TargetLbsMax: 145, TargetRepsMin: 3, TargetRepsMax: 3},
+                },
+                WorkSets: []GeneratedSet{
+                    {Label: "Work Set 1", TargetPctMin: 0.90, TargetPctMax: 1.00, TargetLbsMin: 165, TargetLbsMax: 180, TargetRepsMin: 3, TargetRepsMax: 5},
+                    {Label: "Work Set 2", TargetPctMin: 0.90, TargetPctMax: 1.00, TargetLbsMin: 165, TargetLbsMax: 180, TargetRepsMin: 3, TargetRepsMax: 5},
+                    {Label: "Work Set 3", TargetPctMin: 0.90, TargetPctMax: 1.00, TargetLbsMin: 165, TargetLbsMax: 180, TargetRepsMin: 3, TargetRepsMax: 5},
+                },
 			},
 			{
 				SlotIndex: 1, SlotName: "Braced Push", Method: "HYP",
 				ExerciseName: "Machine Chest Press", HasPR: true,
 				MethodNote: "Hypertrophy focus. Aim for 0-2 Reps in Reserve (RIR).",
-				WorkSets: []GeneratedSet{
-					{Label: "Work Set 1", TargetPct: 0.70, TargetLbs: 160, TargetReps: 10},
-					{Label: "Work Set 2", TargetPct: 0.70, TargetLbs: 160, TargetReps: 10},
-					{Label: "Work Set 3", TargetPct: 0.70, TargetLbs: 160, TargetReps: 10},
-				},
+                WorkSets: []GeneratedSet{
+                    {Label: "Work Set 1", TargetPctMin: 0.70, TargetPctMax: 0.80, TargetLbsMin: 160, TargetLbsMax: 180, TargetRepsMin: 10, TargetRepsMax: 12},
+                    {Label: "Work Set 2", TargetPctMin: 0.70, TargetPctMax: 0.80, TargetLbsMin: 160, TargetLbsMax: 180, TargetRepsMin: 10, TargetRepsMax: 12},
+                    {Label: "Work Set 3", TargetPctMin: 0.70, TargetPctMax: 0.80, TargetLbsMin: 160, TargetLbsMax: 180, TargetRepsMin: 10, TargetRepsMax: 12},
+                },
 			},
 		},
 		Endurance: &Endurance{Type: "Sprint+MLSS", Description: "Sprint + MLSS combo workout"},
@@ -371,13 +383,13 @@ func TestFormatObsidianTextSuperset(t *testing.T) {
 				SlotIndex: 0, SlotName: "Focused Push", Method: "HYP",
 				ExerciseName: "Tricep Pushdown", SupersetGroup: &arms, HasPR: true,
 				MethodNote: "Hypertrophy focus. Aim for 0-2 Reps in Reserve (RIR).",
-				WorkSets: []GeneratedSet{{Label: "Work Set 1", TargetPct: 0.70, TargetLbs: 55, TargetReps: 12}},
+                WorkSets:   []GeneratedSet{{Label: "Work Set 1", TargetPctMin: 0.70, TargetPctMax: 0.75, TargetLbsMin: 55, TargetLbsMax: 60, TargetRepsMin: 8, TargetRepsMax: 12}},
 			},
 			{
 				SlotIndex: 1, SlotName: "Focused Pull", Method: "HYP",
 				ExerciseName: "Preacher Curls", SupersetGroup: &arms, HasPR: true,
 				MethodNote: "Hypertrophy focus. Aim for 0-2 Reps in Reserve (RIR).",
-				WorkSets: []GeneratedSet{{Label: "Work Set 1", TargetPct: 0.75, TargetLbs: 55, TargetReps: 8}},
+                WorkSets:   []GeneratedSet{{Label: "Work Set 1", TargetPctMin: 0.75, TargetPctMax: 0.80, TargetLbsMin: 55, TargetLbsMax: 60, TargetRepsMin: 6, TargetRepsMax: 8}},
 			},
 		},
 	}

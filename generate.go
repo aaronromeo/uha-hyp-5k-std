@@ -38,18 +38,21 @@ func generateWarmupSets(count int, workWeight int) []GeneratedSet {
 	if count == 0 {
 		return nil
 	}
-	sets := make([]GeneratedSet, count)
-	for i := range count {
-		pct := 0.75 + (0.125 * float64(i) / float64(max(count-1, 1)))
-		weight := roundToNearest5(float64(workWeight) * pct)
-		reps := 5 - (2 * i / max(count-1, 1))
-		sets[i] = GeneratedSet{
-			Label:      fmt.Sprintf("Warm-up Set %d", i+1),
-			TargetPct:  pct,
-			TargetLbs:  weight,
-			TargetReps: reps,
-		}
-	}
+    sets := make([]GeneratedSet, count)
+    for i := range count {
+        pct := 0.75 + (0.125 * float64(i) / float64(max(count-1, 1)))
+        weight := roundToNearest5(float64(workWeight) * pct)
+        reps := 5 - (2 * i / max(count-1, 1))
+        sets[i] = GeneratedSet{
+            Label:         fmt.Sprintf("Warm-up Set %d", i+1),
+            TargetPctMin:  pct,
+            TargetPctMax:  pct,
+            TargetLbsMin:  weight,
+            TargetLbsMax:  weight,
+            TargetRepsMin: reps,
+            TargetRepsMax: reps,
+        }
+    }
 	return sets
 }
 
@@ -101,25 +104,30 @@ func generateWorkout(dayNum string, day ProgramDay, prs PRs, seed string, overri
 		// Look up 1RM.
 		oneRM, hasPR := prs[exerciseName]
 
-		// Calculate target weight using lower bound of load percentage range.
-		targetWeight := 0
-		if hasPR {
-			targetWeight = calcTargetWeight(oneRM, slot.LoadPct.Min)
-		}
+        // Calculate target weight bounds using both ends of the load percentage range.
+        targetWeightMin := 0
+        targetWeightMax := 0
+        if hasPR {
+            targetWeightMin = calcTargetWeight(oneRM, slot.LoadPct.Min)
+            targetWeightMax = calcTargetWeight(oneRM, slot.LoadPct.Max)
+        }
 
-		// Generate warmup sets.
-		warmupSets := generateWarmupSets(slot.WarmupSets, targetWeight)
+        // Generate warmup sets (ramp toward the lower bound of the work weight).
+        warmupSets := generateWarmupSets(slot.WarmupSets, targetWeightMin)
 
-		// Generate work sets using min reps (the prescribed rep target).
-		workSets := make([]GeneratedSet, slot.Sets)
-		for j := range slot.Sets {
-			workSets[j] = GeneratedSet{
-				Label:      fmt.Sprintf("Work Set %d", j+1),
-				TargetPct:  slot.LoadPct.Min,
-				TargetLbs:  targetWeight,
-				TargetReps: slot.Reps.Min,
-			}
-		}
+        // Generate work sets carrying the full prescribed range.
+        workSets := make([]GeneratedSet, slot.Sets)
+        for j := range slot.Sets {
+            workSets[j] = GeneratedSet{
+                Label:         fmt.Sprintf("Work Set %d", j+1),
+                TargetPctMin:  slot.LoadPct.Min,
+                TargetPctMax:  slot.LoadPct.Max,
+                TargetLbsMin:  targetWeightMin,
+                TargetLbsMax:  targetWeightMax,
+                TargetRepsMin: slot.Reps.Min,
+                TargetRepsMax: slot.Reps.Max,
+            }
+        }
 
 		exercises[i] = GeneratedExercise{
 			SlotIndex:     i,
@@ -181,21 +189,21 @@ func formatObsidianText(w GeneratedWorkout) string {
 
 		for _, s := range ex.WarmupSets {
 			b.WriteString(fmt.Sprintf("%s\n", s.Label))
-			if ex.HasPR {
-				b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPct*100), s.TargetLbs, s.TargetReps))
-			} else {
-				b.WriteString("target:\n")
-			}
+            if ex.HasPR {
+                b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPctMin*100), s.TargetLbsMin, s.TargetRepsMin))
+            } else {
+                b.WriteString("target:\n")
+            }
 			b.WriteString("actual:\n")
 		}
 
 		for _, s := range ex.WorkSets {
 			b.WriteString(fmt.Sprintf("%s\n", s.Label))
-			if ex.HasPR {
-				b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPct*100), s.TargetLbs, s.TargetReps))
-			} else {
-				b.WriteString("target:\n")
-			}
+            if ex.HasPR {
+                b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPctMin*100), s.TargetLbsMin, s.TargetRepsMin))
+            } else {
+                b.WriteString("target:\n")
+            }
 			b.WriteString("actual:\n")
 		}
 

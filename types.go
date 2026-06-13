@@ -60,8 +60,11 @@ type GeneratedExercise struct {
 }
 
 type GeneratedSet struct {
-	Label      string
-	TargetPct  float64
-	TargetLbs  int
-	TargetReps int
+    Label         string
+    TargetPctMin  float64
+    TargetPctMax  float64
+    TargetLbsMin  int
+    TargetLbsMax  int
+    TargetRepsMin int
+    TargetRepsMax int
 }
