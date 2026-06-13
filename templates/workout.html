@@ -87,7 +87,7 @@
         {{range $ex.WarmupSets}}
         <div class="set">
           <span class="set-label">{{.Label}}</span>
-          <span class="set-target">{{.TargetLbs}} lbs x {{.TargetReps}}</span>
+          <span class="set-target">{{formatSetTarget .}}</span>
         </div>
         {{end}}
       </div>
@@ -97,7 +97,7 @@
         {{range $ex.WorkSets}}
         <div class="set">
           <span class="set-label">{{.Label}}</span>
-          <span class="set-target">{{if $ex.HasPR}}{{.TargetLbs}} lbs x {{.TargetReps}}{{else}}—{{end}}</span>
+          <span class="set-target">{{if $ex.HasPR}}{{formatSetTarget .}}{{else}}—{{end}}</span>
         </div>
         {{end}}
       </div>
