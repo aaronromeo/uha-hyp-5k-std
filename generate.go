@@ -29,7 +29,33 @@ func roundToNearest5(lbs float64) int {
 // calcTargetWeight computes the target weight as a percentage of a 1RM,
 // rounded to the nearest 5-lb increment.
 func calcTargetWeight(oneRM int, pct float64) int {
-	return roundToNearest5(float64(oneRM) * pct)
+    return roundToNearest5(float64(oneRM) * pct)
+}
+
+// formatIntRange formats a pair of integers as "min–max" using an en-dash.
+// Always renders both bounds.
+func formatIntRange(minVal, maxVal int) string {
+    return fmt.Sprintf("%d–%d", minVal, maxVal)
+}
+
+// formatFloatPctRange formats fractional percentages (0.90, 1.00) as
+// integer-percent ranges like "90–100".
+func formatFloatPctRange(minVal, maxVal float64) string {
+    return fmt.Sprintf("%d–%d", int(minVal*100), int(maxVal*100))
+}
+
+// formatLbsRepsRange returns the "165–180 lbs x 1–5" substring.
+func formatLbsRepsRange(s GeneratedSet) string {
+    return fmt.Sprintf("%s lbs x %s", formatIntRange(s.TargetLbsMin, s.TargetLbsMax), formatIntRange(s.TargetRepsMin, s.TargetRepsMax))
+}
+
+// formatSetTargetLine returns the full target line like
+// "90–100% 1RM (165–180 lbs) x 1–5" used by Obsidian output.
+func formatSetTargetLine(s GeneratedSet) string {
+    // Format as: "90–100% 1RM (165–180 lbs) x 3–5"
+    lbsRange := formatIntRange(s.TargetLbsMin, s.TargetLbsMax)
+    repsRange := formatIntRange(s.TargetRepsMin, s.TargetRepsMax)
+    return fmt.Sprintf("%s%% 1RM (%s lbs) x %s", formatFloatPctRange(s.TargetPctMin, s.TargetPctMax), lbsRange, repsRange)
 }
 
 // generateWarmupSets creates count ramping warmup sets from ~75% to ~87.5% of
@@ -190,7 +216,7 @@ func formatObsidianText(w GeneratedWorkout) string {
 		for _, s := range ex.WarmupSets {
 			b.WriteString(fmt.Sprintf("%s\n", s.Label))
             if ex.HasPR {
-                b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPctMin*100), s.TargetLbsMin, s.TargetRepsMin))
+                b.WriteString(fmt.Sprintf("target: %s\n", formatSetTargetLine(s)))
             } else {
                 b.WriteString("target:\n")
             }
@@ -200,7 +226,7 @@ func formatObsidianText(w GeneratedWorkout) string {
 		for _, s := range ex.WorkSets {
 			b.WriteString(fmt.Sprintf("%s\n", s.Label))
             if ex.HasPR {
-                b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPctMin*100), s.TargetLbsMin, s.TargetRepsMin))
+                b.WriteString(fmt.Sprintf("target: %s\n", formatSetTargetLine(s)))
             } else {
                 b.WriteString("target:\n")
             }

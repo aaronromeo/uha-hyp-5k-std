@@ -285,15 +285,53 @@ func TestMethodNote(t *testing.T) {
 
 // helper for test
 func containsStr(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
-		func() bool {
-			for i := 0; i <= len(s)-len(substr); i++ {
-				if s[i:i+len(substr)] == substr {
-					return true
-				}
-			}
-			return false
-		}())
+    return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+        func() bool {
+            for i := 0; i <= len(s)-len(substr); i++ {
+                if s[i:i+len(substr)] == substr {
+                    return true
+                }
+            }
+            return false
+        }())
+}
+
+// ---- format helpers ----
+
+func TestFormatIntRange(t *testing.T) {
+    cases := []struct{min, max int; want string}{
+        {165, 180, "165–180"},
+        {125, 125, "125–125"},
+        {0, 0, "0–0"},
+    }
+    for _, c := range cases {
+        got := formatIntRange(c.min, c.max)
+        if got != c.want {
+            t.Errorf("formatIntRange(%d,%d) = %q, want %q", c.min, c.max, got, c.want)
+        }
+    }
+}
+
+func TestFormatFloatPctRange(t *testing.T) {
+    cases := []struct{min, max float64; want string}{
+        {0.90, 1.00, "90–100"},
+        {0.75, 0.75, "75–75"},
+    }
+    for _, c := range cases {
+        got := formatFloatPctRange(c.min, c.max)
+        if got != c.want {
+            t.Errorf("formatFloatPctRange(%v,%v) = %q, want %q", c.min, c.max, got, c.want)
+        }
+    }
+}
+
+func TestFormatSetTargetLine(t *testing.T) {
+    s := GeneratedSet{TargetPctMin: 0.90, TargetPctMax: 1.00, TargetLbsMin: 165, TargetLbsMax: 180, TargetRepsMin: 3, TargetRepsMax: 5}
+    got := formatSetTargetLine(s)
+    want := "90–100% 1RM (165–180 lbs) x 3–5"
+    if got != want {
+        t.Errorf("formatSetTargetLine = %q, want %q", got, want)
+    }
 }
 
 // ---- formatObsidianText ----
@@ -338,12 +376,12 @@ func TestFormatObsidianText(t *testing.T) {
 		"Lift: Upper Body Hypertrophy — Push Primary",
 		"Incline Bench Press: Ramping",
 		"Warm-up Set 1",
-		"target: 75% 1RM (125 lbs) x 5",
+		"target: 75–75% 1RM (125–125 lbs) x 5–5",
 		"actual:",
 		"Work Set 1",
-		"target: 90% 1RM (165 lbs) x 3",
+		"target: 90–100% 1RM (165–180 lbs) x 3–5",
 		"Machine Chest Press: Hypertrophy focus. Aim for 0-2 Reps in Reserve (RIR).",
-		"target: 70% 1RM (160 lbs) x 10",
+		"target: 70–80% 1RM (160–180 lbs) x 10–12",
 		"---",
 		"Endurance: Sprint+MLSS",
 		"Sprint + MLSS combo workout",
