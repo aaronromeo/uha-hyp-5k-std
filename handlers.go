@@ -115,6 +115,9 @@ func templateFuncs() template.FuncMap {
 			names := supersetSlotNames(exercises, group)
 			return strings.Join(names, "/")
 		},
+		"formatSetTarget": func(s GeneratedSet) string {
+			return formatLbsRepsRange(s)
+		},
 		"textareaRows": func(text string) int {
 			lines := strings.Count(text, "\n") + 1
 			if lines < 10 {
