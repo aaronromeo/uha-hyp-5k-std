@@ -173,3 +173,39 @@ func TestWorkoutHandlerSwapOverride(t *testing.T) {
 		t.Error("expected overridden exercise 'Close-Grip Bench Press' in output")
 	}
 }
+
+func TestWorkoutHandlerRendersRange(t *testing.T) {
+    app := newTestApp(
+        Program{
+            "1": ProgramDay{
+                Label: "Saturday",
+                Name:  "Upper Push",
+                Strength: []Slot{
+                    {
+                        Name:       "Secondary Push",
+                        Method:     "ME",
+                        Sets:       1,
+                        Reps:       Range{Min: 1, Max: 5},
+                        LoadPct:    RangeF{Min: 0.90, Max: 1.00},
+                        WarmupSets: 1,
+                        Choices:    []string{"Incline Bench Press"},
+                    },
+                },
+            },
+        },
+        PRs{"Incline Bench Press": 181},
+    )
+
+    req := httptest.NewRequest("GET", "/workout?day=1&seed=fixed", nil)
+    rr := httptest.NewRecorder()
+    app.handleWorkout(rr, req)
+
+    if rr.Code != http.StatusOK {
+        t.Fatalf("expected 200, got %d", rr.Code)
+    }
+    body := rr.Body.String()
+
+    if !containsStr(body, "165–180 lbs x 1–5") {
+        t.Errorf("expected '165–180 lbs x 1–5' in HTML body\n\nBody:\n%s", body)
+    }
+}

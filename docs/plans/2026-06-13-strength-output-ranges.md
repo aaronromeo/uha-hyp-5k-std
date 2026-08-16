@@ -12,6 +12,14 @@
 
 **Baseline assumption:** The working tree starts clean and tests pass (`go test ./...` → 26 passed). The committed `GeneratedSet` has `Label string; TargetPct float64; TargetLbs int; TargetReps int`. The HTML template references `.TargetLbs` and `.TargetReps` and renders them correctly today.
 
+## Conventions used in this plan
+
+- **"Find … replace with …"** blocks identify edits by giving the exact source text to locate (the *find* block) and the exact text to write in its place (the *replace* block). Match the *find* block character-for-character including whitespace. If the find block does not match, **stop and ask** — do not guess.
+- **En-dash character (U+2013, `–`)** appears in user-facing range strings. In Go source it can be written as a literal en-dash inside string literals (the source files are UTF-8). If your editor or tooling is uncertain about UTF-8 round-tripping, the equivalent escape is `"\u2013"`. Either is fine; the bytes that end up on disk must be `0xE2 0x80 0x93`. Do NOT substitute a hyphen (`-`).
+- **Em-dash character (U+2014, `—`)** appears in one place: the HTML template's missing-PR branch (`{{else}}—{{end}}`). It is already present in the committed template.
+- **Do not commit partial work.** Commits only happen at the explicit "Commit" steps. If a task has multiple steps that leave intermediate states uncompilable, that's expected.
+- **If something looks wrong, stop and ask.** Bad work is worse than no work.
+
 ---
 
 ## File Structure
@@ -39,7 +47,18 @@ The formatting helpers live in `generate.go` next to `formatObsidianText` becaus
 
 - [ ] **Step 1: Edit the struct**
 
-Replace the current `GeneratedSet` struct in `types.go` with:
+In `types.go`, find:
+
+```go
+type GeneratedSet struct {
+	Label      string
+	TargetPct  float64
+	TargetLbs  int
+	TargetReps int
+}
+```
+
+Replace with:
 
 ```go
 type GeneratedSet struct {
@@ -63,75 +82,111 @@ Expected: build fails with errors about undefined fields `TargetPct`, `TargetLbs
 ## Task 2: Update `generate.go` to populate Min/Max fields
 
 **Files:**
-- Modify: `generate.go:37-54` (`generateWarmupSets`)
-- Modify: `generate.go:104-122` (work-set generation inside `generateWorkout`)
-- Modify: `generate.go:182-200` (Obsidian formatter, field references only — the format string changes in Task 4)
+- Modify: `generate.go` (three edits: `generateWarmupSets` body, work-set generation in `generateWorkout`, and two field references in `formatObsidianText`).
 
 This task gets the code compiling again with the new field names. The Obsidian format string is *not* changed here — we only swap field references so the binary still builds. The actual range rendering happens in Task 4.
 
-- [ ] **Step 1: Update `generateWarmupSets`**
+- [ ] **Step 1: Update `generateWarmupSets` body**
 
-Replace the body of the for-loop in `generateWarmupSets` at `generate.go:42-52` with:
+In `generate.go`, find:
 
 ```go
-for i := range count {
-	pct := 0.75 + (0.125 * float64(i) / float64(max(count-1, 1)))
-	weight := roundToNearest5(float64(workWeight) * pct)
-	reps := 5 - (2 * i / max(count-1, 1))
-	sets[i] = GeneratedSet{
-		Label:         fmt.Sprintf("Warm-up Set %d", i+1),
-		TargetPctMin:  pct,
-		TargetPctMax:  pct,
-		TargetLbsMin:  weight,
-		TargetLbsMax:  weight,
-		TargetRepsMin: reps,
-		TargetRepsMax: reps,
-	}
-}
+		sets[i] = GeneratedSet{
+			Label:      fmt.Sprintf("Warm-up Set %d", i+1),
+			TargetPct:  pct,
+			TargetLbs:  weight,
+			TargetReps: reps,
+		}
+```
+
+Replace with:
+
+```go
+		sets[i] = GeneratedSet{
+			Label:         fmt.Sprintf("Warm-up Set %d", i+1),
+			TargetPctMin:  pct,
+			TargetPctMax:  pct,
+			TargetLbsMin:  weight,
+			TargetLbsMax:  weight,
+			TargetRepsMin: reps,
+			TargetRepsMax: reps,
+		}
 ```
 
 Warmups are a degenerate range — `Max == Min` for all three fields. The ramp algorithm is unchanged.
 
 - [ ] **Step 2: Update work-set generation in `generateWorkout`**
 
-Replace the block at `generate.go:104-122` (`// Calculate target weight…` through the end of the work-set loop) with:
+In `generate.go`, find:
 
 ```go
-// Calculate target weight bounds using both ends of the load percentage range.
-targetWeightMin := 0
-targetWeightMax := 0
-if hasPR {
-	targetWeightMin = calcTargetWeight(oneRM, slot.LoadPct.Min)
-	targetWeightMax = calcTargetWeight(oneRM, slot.LoadPct.Max)
-}
+		// Calculate target weight using lower bound of load percentage range.
+		targetWeight := 0
+		if hasPR {
+			targetWeight = calcTargetWeight(oneRM, slot.LoadPct.Min)
+		}
 
-// Generate warmup sets (ramp toward the lower bound of the work weight).
-warmupSets := generateWarmupSets(slot.WarmupSets, targetWeightMin)
+		// Generate warmup sets.
+		warmupSets := generateWarmupSets(slot.WarmupSets, targetWeight)
 
-// Generate work sets carrying the full prescribed range.
-workSets := make([]GeneratedSet, slot.Sets)
-for j := range slot.Sets {
-	workSets[j] = GeneratedSet{
-		Label:         fmt.Sprintf("Work Set %d", j+1),
-		TargetPctMin:  slot.LoadPct.Min,
-		TargetPctMax:  slot.LoadPct.Max,
-		TargetLbsMin:  targetWeightMin,
-		TargetLbsMax:  targetWeightMax,
-		TargetRepsMin: slot.Reps.Min,
-		TargetRepsMax: slot.Reps.Max,
-	}
-}
+		// Generate work sets using min reps (the prescribed rep target).
+		workSets := make([]GeneratedSet, slot.Sets)
+		for j := range slot.Sets {
+			workSets[j] = GeneratedSet{
+				Label:      fmt.Sprintf("Work Set %d", j+1),
+				TargetPct:  slot.LoadPct.Min,
+				TargetLbs:  targetWeight,
+				TargetReps: slot.Reps.Min,
+			}
+		}
 ```
 
-- [ ] **Step 3: Update the Obsidian formatter's field references (format string unchanged)**
-
-In `formatObsidianText`, the two `b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", …))` calls at `generate.go:185` and `generate.go:195` currently reference `s.TargetPct`, `s.TargetLbs`, `s.TargetReps`. Update them to use the `…Min` names so the code compiles. **Do not change the format string yet.**
-
-Replace both lines:
+Replace with:
 
 ```go
-b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPctMin*100), s.TargetLbsMin, s.TargetRepsMin))
+		// Calculate target weight bounds using both ends of the load percentage range.
+		targetWeightMin := 0
+		targetWeightMax := 0
+		if hasPR {
+			targetWeightMin = calcTargetWeight(oneRM, slot.LoadPct.Min)
+			targetWeightMax = calcTargetWeight(oneRM, slot.LoadPct.Max)
+		}
+
+		// Generate warmup sets (ramp toward the lower bound of the work weight).
+		warmupSets := generateWarmupSets(slot.WarmupSets, targetWeightMin)
+
+		// Generate work sets carrying the full prescribed range.
+		workSets := make([]GeneratedSet, slot.Sets)
+		for j := range slot.Sets {
+			workSets[j] = GeneratedSet{
+				Label:         fmt.Sprintf("Work Set %d", j+1),
+				TargetPctMin:  slot.LoadPct.Min,
+				TargetPctMax:  slot.LoadPct.Max,
+				TargetLbsMin:  targetWeightMin,
+				TargetLbsMax:  targetWeightMax,
+				TargetRepsMin: slot.Reps.Min,
+				TargetRepsMax: slot.Reps.Max,
+			}
+		}
 ```
+
+- [ ] **Step 3: Update the Obsidian formatter's field references (format string UNCHANGED)**
+
+There are two `b.WriteString(fmt.Sprintf("target: …", …))` calls inside `formatObsidianText` — one inside the warmup-sets `for _, s := range ex.WarmupSets` loop, one inside the work-sets `for _, s := range ex.WorkSets` loop. Both reference `s.TargetPct`, `s.TargetLbs`, `s.TargetReps`. The format string itself stays the same; only the field references change.
+
+In `generate.go`, replace **all occurrences** of:
+
+```go
+			b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPct*100), s.TargetLbs, s.TargetReps))
+```
+
+with:
+
+```go
+			b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPctMin*100), s.TargetLbsMin, s.TargetRepsMin))
+```
+
+You should make this replacement twice (once for warmups, once for work sets). The two source lines are byte-identical, so a global find-and-replace is safe here.
 
 - [ ] **Step 4: Verify build succeeds (tests will still fail)**
 
@@ -154,7 +209,32 @@ This task only renames field references inside test literals so the test file co
 
 - [ ] **Step 1: Update `TestGenerateWarmupSets_Two`**
 
-Replace the assertions in `TestGenerateWarmupSets_Two` (`generate_test.go:82-101`) with:
+In `generate_test.go`, find:
+
+```go
+func TestGenerateWarmupSets_Two(t *testing.T) {
+	sets := generateWarmupSets(2, 165)
+	if len(sets) != 2 {
+		t.Fatalf("expected 2 warmup sets, got %d", len(sets))
+	}
+	// set1: 75% of 165 = 123.75 → 125, 5 reps
+	if sets[0].TargetLbs != 125 {
+		t.Errorf("set 1 weight: expected 125, got %d", sets[0].TargetLbs)
+	}
+	if sets[0].TargetReps != 5 {
+		t.Errorf("set 1 reps: expected 5, got %d", sets[0].TargetReps)
+	}
+	// set2: 87.5% of 165 = 144.375 → 145, 3 reps
+	if sets[1].TargetLbs != 145 {
+		t.Errorf("set 2 weight: expected 145, got %d", sets[1].TargetLbs)
+	}
+	if sets[1].TargetReps != 3 {
+		t.Errorf("set 2 reps: expected 3, got %d", sets[1].TargetReps)
+	}
+}
+```
+
+Replace with:
 
 ```go
 func TestGenerateWarmupSets_Two(t *testing.T) {
@@ -191,57 +271,95 @@ func TestGenerateWarmupSets_Two(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Update `GeneratedSet` literals in `TestFormatObsidianText`**
+- [ ] **Step 2: Update `GeneratedSet` literals in the first exercise of `TestFormatObsidianText`**
 
-In the `WarmupSets` and `WorkSets` slices in `TestFormatObsidianText` (`generate_test.go:298-317`), change each literal so the existing `TargetPct`/`TargetLbs`/`TargetReps` become `…Min` *and* an explicit `…Max` is set. For the warmup sets keep `Max == Min`. For the work sets the existing values are the `Min` — pick `Max` values that reflect a real range from the spec. Replace those two slices with:
-
-```go
-WarmupSets: []GeneratedSet{
-	{Label: "Warm-up Set 1", TargetPctMin: 0.75, TargetPctMax: 0.75, TargetLbsMin: 125, TargetLbsMax: 125, TargetRepsMin: 5, TargetRepsMax: 5},
-	{Label: "Warm-up Set 2", TargetPctMin: 0.875, TargetPctMax: 0.875, TargetLbsMin: 145, TargetLbsMax: 145, TargetRepsMin: 3, TargetRepsMax: 3},
-},
-WorkSets: []GeneratedSet{
-	{Label: "Work Set 1", TargetPctMin: 0.90, TargetPctMax: 1.00, TargetLbsMin: 165, TargetLbsMax: 180, TargetRepsMin: 1, TargetRepsMax: 5},
-	{Label: "Work Set 2", TargetPctMin: 0.90, TargetPctMax: 1.00, TargetLbsMin: 165, TargetLbsMax: 180, TargetRepsMin: 1, TargetRepsMax: 5},
-	{Label: "Work Set 3", TargetPctMin: 0.90, TargetPctMax: 1.00, TargetLbsMin: 165, TargetLbsMax: 180, TargetRepsMin: 1, TargetRepsMax: 5},
-},
-```
-
-And the second exercise's `WorkSets` slice (`generate_test.go:312-316`):
+In `generate_test.go`, find (inside `TestFormatObsidianText`, the first exercise — note the `Incline Bench Press` exercise name above):
 
 ```go
-WorkSets: []GeneratedSet{
-	{Label: "Work Set 1", TargetPctMin: 0.70, TargetPctMax: 0.80, TargetLbsMin: 160, TargetLbsMax: 180, TargetRepsMin: 6, TargetRepsMax: 12},
-	{Label: "Work Set 2", TargetPctMin: 0.70, TargetPctMax: 0.80, TargetLbsMin: 160, TargetLbsMax: 180, TargetRepsMin: 6, TargetRepsMax: 12},
-	{Label: "Work Set 3", TargetPctMin: 0.70, TargetPctMax: 0.80, TargetLbsMin: 160, TargetLbsMax: 180, TargetRepsMin: 6, TargetRepsMax: 12},
-},
+				WarmupSets: []GeneratedSet{
+					{Label: "Warm-up Set 1", TargetPct: 0.75, TargetLbs: 125, TargetReps: 5},
+					{Label: "Warm-up Set 2", TargetPct: 0.875, TargetLbs: 145, TargetReps: 3},
+				},
+				WorkSets: []GeneratedSet{
+					{Label: "Work Set 1", TargetPct: 0.90, TargetLbs: 165, TargetReps: 3},
+					{Label: "Work Set 2", TargetPct: 0.90, TargetLbs: 165, TargetReps: 3},
+					{Label: "Work Set 3", TargetPct: 0.90, TargetLbs: 165, TargetReps: 3},
+				},
 ```
 
-**Note:** the `mustContain` list inside this test still asserts the *old* format (`target: 75% 1RM (125 lbs) x 5`, etc.) — leave it alone for now. It will fail in Task 4 once the format string changes. That failure is expected and gets fixed in Task 5.
-
-- [ ] **Step 3: Update `GeneratedSet` literals in `TestFormatObsidianTextSuperset`**
-
-In `generate_test.go:374` and `generate_test.go:380`, update the two single-element `WorkSets` slices:
+Replace with:
 
 ```go
-WorkSets:   []GeneratedSet{{Label: "Work Set 1", TargetPctMin: 0.70, TargetPctMax: 0.75, TargetLbsMin: 55, TargetLbsMax: 60, TargetRepsMin: 8, TargetRepsMax: 12}},
+				WarmupSets: []GeneratedSet{
+					{Label: "Warm-up Set 1", TargetPctMin: 0.75, TargetPctMax: 0.75, TargetLbsMin: 125, TargetLbsMax: 125, TargetRepsMin: 5, TargetRepsMax: 5},
+					{Label: "Warm-up Set 2", TargetPctMin: 0.875, TargetPctMax: 0.875, TargetLbsMin: 145, TargetLbsMax: 145, TargetRepsMin: 3, TargetRepsMax: 3},
+				},
+				WorkSets: []GeneratedSet{
+					{Label: "Work Set 1", TargetPctMin: 0.90, TargetPctMax: 1.00, TargetLbsMin: 165, TargetLbsMax: 180, TargetRepsMin: 1, TargetRepsMax: 5},
+					{Label: "Work Set 2", TargetPctMin: 0.90, TargetPctMax: 1.00, TargetLbsMin: 165, TargetLbsMax: 180, TargetRepsMin: 1, TargetRepsMax: 5},
+					{Label: "Work Set 3", TargetPctMin: 0.90, TargetPctMax: 1.00, TargetLbsMin: 165, TargetLbsMax: 180, TargetRepsMin: 1, TargetRepsMax: 5},
+				},
 ```
 
-and
+- [ ] **Step 3: Update `GeneratedSet` literals in the second exercise of `TestFormatObsidianText`**
+
+In `generate_test.go`, find (inside `TestFormatObsidianText`, the second exercise — `Machine Chest Press`):
 
 ```go
-WorkSets:   []GeneratedSet{{Label: "Work Set 1", TargetPctMin: 0.75, TargetPctMax: 0.80, TargetLbsMin: 55, TargetLbsMax: 60, TargetRepsMin: 6, TargetRepsMax: 8}},
+				WorkSets: []GeneratedSet{
+					{Label: "Work Set 1", TargetPct: 0.70, TargetLbs: 160, TargetReps: 10},
+					{Label: "Work Set 2", TargetPct: 0.70, TargetLbs: 160, TargetReps: 10},
+					{Label: "Work Set 3", TargetPct: 0.70, TargetLbs: 160, TargetReps: 10},
+				},
 ```
 
-- [ ] **Step 4: Verify build + tests**
+Replace with:
+
+```go
+				WorkSets: []GeneratedSet{
+					{Label: "Work Set 1", TargetPctMin: 0.70, TargetPctMax: 0.80, TargetLbsMin: 160, TargetLbsMax: 180, TargetRepsMin: 6, TargetRepsMax: 12},
+					{Label: "Work Set 2", TargetPctMin: 0.70, TargetPctMax: 0.80, TargetLbsMin: 160, TargetLbsMax: 180, TargetRepsMin: 6, TargetRepsMax: 12},
+					{Label: "Work Set 3", TargetPctMin: 0.70, TargetPctMax: 0.80, TargetLbsMin: 160, TargetLbsMax: 180, TargetRepsMin: 6, TargetRepsMax: 12},
+				},
+```
+
+**Important:** the `mustContain` list inside `TestFormatObsidianText` still asserts the *old* format (`target: 75% 1RM (125 lbs) x 5`, etc.) — leave it alone for now. Because Task 2 Step 3 kept the format string identical, this test continues to pass as long as the literal Min values match the old single-value expectations. The `mustContain` list is updated to the new range format in Task 4 Step 10.
+
+- [ ] **Step 4: Update `GeneratedSet` literals in `TestFormatObsidianTextSuperset`**
+
+In `generate_test.go`, find (inside `TestFormatObsidianTextSuperset`, the `Tricep Pushdown` exercise):
+
+```go
+				WorkSets: []GeneratedSet{{Label: "Work Set 1", TargetPct: 0.70, TargetLbs: 55, TargetReps: 12}},
+```
+
+Replace with:
+
+```go
+				WorkSets:   []GeneratedSet{{Label: "Work Set 1", TargetPctMin: 0.70, TargetPctMax: 0.75, TargetLbsMin: 55, TargetLbsMax: 60, TargetRepsMin: 8, TargetRepsMax: 12}},
+```
+
+In `generate_test.go`, find (inside `TestFormatObsidianTextSuperset`, the `Preacher Curls` exercise):
+
+```go
+				WorkSets: []GeneratedSet{{Label: "Work Set 1", TargetPct: 0.75, TargetLbs: 55, TargetReps: 8}},
+```
+
+Replace with:
+
+```go
+				WorkSets:   []GeneratedSet{{Label: "Work Set 1", TargetPctMin: 0.75, TargetPctMax: 0.80, TargetLbsMin: 55, TargetLbsMax: 60, TargetRepsMin: 6, TargetRepsMax: 8}},
+```
+
+- [ ] **Step 5: Verify build + tests**
 
 Run: `go build ./...`
 Expected: success.
 
 Run: `go test ./...`
-Expected: all tests pass. The Obsidian formatter still produces the old single-value format using only the Min fields, which is what `TestFormatObsidianText` currently asserts.
+Expected: all 26 tests pass. The Obsidian formatter still produces the old single-value format using only the Min fields, which is what `TestFormatObsidianText` currently asserts.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add types.go generate.go generate_test.go
@@ -406,49 +524,70 @@ Expected: PASS.
 
 - [ ] **Step 9: Update `formatObsidianText` to use `formatSetTargetLine`**
 
-In `generate.go`, replace the warmup-loop target line (currently around `generate.go:185`):
+In `generate.go`, replace **all occurrences** of:
 
 ```go
-b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPctMin*100), s.TargetLbsMin, s.TargetRepsMin))
+			b.WriteString(fmt.Sprintf("target: %d%% 1RM (%d lbs) x %d\n", int(s.TargetPctMin*100), s.TargetLbsMin, s.TargetRepsMin))
 ```
 
 with:
 
 ```go
-b.WriteString(fmt.Sprintf("target: %s\n", formatSetTargetLine(s)))
+			b.WriteString(fmt.Sprintf("target: %s\n", formatSetTargetLine(s)))
 ```
 
-Do the same replacement for the work-set loop's target line (around `generate.go:195`).
+There are two matching occurrences (one in the warmup-sets loop, one in the work-sets loop). Both lines are byte-identical, so a global replacement is safe. After the edit, verify the file contains exactly two calls to `formatSetTargetLine(s)`.
 
 - [ ] **Step 10: Update `TestFormatObsidianText` `mustContain` strings**
 
-The old assertions in `TestFormatObsidianText` (`generate_test.go:329, 332, 334`) referenced the single-value format. Replace them with the new range format expected from the literal values you put in Step 3 of Task 3:
+In `generate_test.go`, find:
 
 ```go
-mustContain := []string{
-	"Day 1 — Saturday",
-	"Lift: Upper Body Hypertrophy — Push Primary",
-	"Incline Bench Press: Ramping",
-	"Warm-up Set 1",
-	"target: 75–75% 1RM (125–125 lbs) x 5–5",
-	"actual:",
-	"Work Set 1",
-	"target: 90–100% 1RM (165–180 lbs) x 1–5",
-	"Machine Chest Press: Hypertrophy focus. Aim for 0-2 Reps in Reserve (RIR).",
-	"target: 70–80% 1RM (160–180 lbs) x 6–12",
-	"---",
-	"Endurance: Sprint+MLSS",
-	"Sprint + MLSS combo workout",
-	"User notes:",
-}
+	mustContain := []string{
+		"Day 1 — Saturday",
+		"Lift: Upper Body Hypertrophy — Push Primary",
+		"Incline Bench Press: Ramping",
+		"Warm-up Set 1",
+		"target: 75% 1RM (125 lbs) x 5",
+		"actual:",
+		"Work Set 1",
+		"target: 90% 1RM (165 lbs) x 3",
+		"Machine Chest Press: Hypertrophy focus. Aim for 0-2 Reps in Reserve (RIR).",
+		"target: 70% 1RM (160 lbs) x 10",
+		"---",
+		"Endurance: Sprint+MLSS",
+		"Sprint + MLSS combo workout",
+		"User notes:",
+	}
 ```
 
-The two changed strings are the `target: …` lines (en-dashes throughout).
+Replace with:
+
+```go
+	mustContain := []string{
+		"Day 1 — Saturday",
+		"Lift: Upper Body Hypertrophy — Push Primary",
+		"Incline Bench Press: Ramping",
+		"Warm-up Set 1",
+		"target: 75–75% 1RM (125–125 lbs) x 5–5",
+		"actual:",
+		"Work Set 1",
+		"target: 90–100% 1RM (165–180 lbs) x 1–5",
+		"Machine Chest Press: Hypertrophy focus. Aim for 0-2 Reps in Reserve (RIR).",
+		"target: 70–80% 1RM (160–180 lbs) x 6–12",
+		"---",
+		"Endurance: Sprint+MLSS",
+		"Sprint + MLSS combo workout",
+		"User notes:",
+	}
+```
+
+The three changed strings are the `target: …` lines. Note that the `—` separators in `Day 1 — Saturday`, `Upper Body Hypertrophy — Push Primary`, and `Hypertrophy focus` are em-dashes (U+2014) and are unchanged. Only the three `target:` lines use the en-dash (U+2013) for ranges.
 
 - [ ] **Step 11: Run all tests to verify**
 
 Run: `go test ./...`
-Expected: PASS (all 28+ tests).
+Expected: PASS. The total test count is now 26 (baseline) + 2 (`TestFormatIntRange`, `TestFormatFloatPctRange`) + 2 (`TestFormatSetTargetLine_WorkSet`, `TestFormatSetTargetLine_DegenerateWarmup`) = 30. If you see a different count, something is off — stop and report.
 
 - [ ] **Step 12: Commit**
 
@@ -528,43 +667,62 @@ Expected: FAIL. After Tasks 1-3, the struct fields are `TargetLbsMin`/`TargetRep
 
 - [ ] **Step 3: Add `formatSetTarget` to the template FuncMap**
 
-In `handlers.go`, inside `templateFuncs()` (between `supersetNames` and `textareaRows`, around `handlers.go:118`), add:
+In `handlers.go`, find:
 
 ```go
-"formatSetTarget": func(s GeneratedSet) string {
-	return formatLbsRepsRange(s)
-},
+		"supersetNames": func(exercises []GeneratedExercise, group string) string {
+			names := supersetSlotNames(exercises, group)
+			return strings.Join(names, "/")
+		},
+		"textareaRows": func(text string) int {
 ```
 
-The full updated `templateFuncs` map should now have five entries: `swapURL`, `deref`, `supersetNames`, `formatSetTarget`, `textareaRows`.
+Replace with:
+
+```go
+		"supersetNames": func(exercises []GeneratedExercise, group string) string {
+			names := supersetSlotNames(exercises, group)
+			return strings.Join(names, "/")
+		},
+		"formatSetTarget": func(s GeneratedSet) string {
+			return formatLbsRepsRange(s)
+		},
+		"textareaRows": func(text string) int {
+```
+
+After this edit, `templateFuncs()` should return a map with five entries: `swapURL`, `deref`, `supersetNames`, `formatSetTarget`, `textareaRows`.
 
 - [ ] **Step 4: Update the HTML template**
 
-In `templates/workout.html`, replace line 90 (inside the warmup loop):
+There are two edits to make in `templates/workout.html`.
+
+**Edit 1 (warmup-sets block):** Find:
 
 ```html
-<span class="set-target">{{.TargetLbs}} lbs x {{.TargetReps}}</span>
+          <span class="set-target">{{.TargetLbs}} lbs x {{.TargetReps}}</span>
 ```
 
-with:
+Replace with:
 
 ```html
-<span class="set-target">{{formatSetTarget .}}</span>
+          <span class="set-target">{{formatSetTarget .}}</span>
 ```
 
-And replace line 100 (inside the work-set loop):
+**Edit 2 (work-sets block):** Find:
 
 ```html
-<span class="set-target">{{if $ex.HasPR}}{{.TargetLbs}} lbs x {{.TargetReps}}{{else}}—{{end}}</span>
+          <span class="set-target">{{if $ex.HasPR}}{{.TargetLbs}} lbs x {{.TargetReps}}{{else}}—{{end}}</span>
 ```
 
-with:
+Replace with:
 
 ```html
-<span class="set-target">{{if $ex.HasPR}}{{formatSetTarget .}}{{else}}—{{end}}</span>
+          <span class="set-target">{{if $ex.HasPR}}{{formatSetTarget .}}{{else}}—{{end}}</span>
 ```
 
-The em-dash (`—`, U+2014) in the missing-PR branch is unchanged.
+The em-dash (`—`, U+2014) in the missing-PR branch is preserved by the replacement.
+
+After both edits, the template should contain exactly two calls to `{{formatSetTarget .}}` and no remaining references to `.TargetLbs` or `.TargetReps`.
 
 - [ ] **Step 5: Run the handler test**
 
@@ -607,7 +765,7 @@ the range string appears in the rendered HTML body."
 - [ ] **Step 1: Full test run**
 
 Run: `go test ./... -v`
-Expected: all tests pass. Should be at least 30 tests (26 original + ~4 new: `TestFormatIntRange`, `TestFormatFloatPctRange`, `TestFormatSetTargetLine_WorkSet`, `TestFormatSetTargetLine_DegenerateWarmup`, `TestWorkoutHandlerRendersRange`).
+Expected: all 31 tests pass — 26 original plus 5 new (`TestFormatIntRange`, `TestFormatFloatPctRange`, `TestFormatSetTargetLine_WorkSet`, `TestFormatSetTargetLine_DegenerateWarmup`, `TestWorkoutHandlerRendersRange`).
 
 - [ ] **Step 2: Vet**
 
