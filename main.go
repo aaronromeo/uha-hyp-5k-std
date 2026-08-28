@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 //go:embed templates/*.html
@@ -42,6 +43,7 @@ func main() {
 		program:   program,
 		prs:       prs,
 		templates: tmpl,
+		now:       time.Now,
 	}
 
 	http.HandleFunc("/", app.handleIndex)

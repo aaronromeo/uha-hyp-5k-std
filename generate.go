@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"strings"
+	"time"
 )
 
 // pickExercise deterministically selects an exercise using SHA256 hash of
@@ -180,10 +181,11 @@ func generateWorkout(dayNum string, day ProgramDay, prs PRs, seed string, overri
 }
 
 // formatObsidianText renders a GeneratedWorkout as plain text for Obsidian.
-func formatObsidianText(w GeneratedWorkout) string {
+// The header line ends with the generation date, formatted compactly (YYYYMMDD).
+func formatObsidianText(w GeneratedWorkout, ts time.Time) string {
 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf("Day %s — %s\n", w.Day, w.Label))
+	b.WriteString(fmt.Sprintf("Day %s — %s - %s\n", w.Day, w.Label, ts.Format("20060102")))
 	b.WriteString(fmt.Sprintf("Lift: %s\n", w.Name))
 
 	openSuperset := ""

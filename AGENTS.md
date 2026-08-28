@@ -12,7 +12,7 @@ Workout generator web app. Single Go package, stdlib only (`go.mod` has zero dep
 ## Gotchas
 
 - **Restart to see changes.** `data/*.json` is loaded once at startup and `templates/*.html` is `go:embed`'d at compile time — neither is watched.
-- **Generation is deterministic:** same `day` + `seed` + slot overrides → same workout (sha256 of `seed-slotIndex` seeds a PCG PRNG in `generate.go`). Pass `?seed=` to reproduce; tests depend on fixed seeds. Slot overrides are `?s0=Exercise+Name`, `?s1=…` by slot index.
+- **Generation is deterministic:** same `day` + `seed` + slot overrides → same workout (sha256 of `seed-slotIndex` seeds a PCG PRNG in `generate.go`). Pass `?seed=` to reproduce; tests depend on fixed seeds. Slot overrides are `?s0=Exercise+Name`, `?s1=…` by slot index. The Obsidian header's ` - YYYYMMDD` stamp is the generation date (server local time; tests use fixed clocks), so same-seed output differs across days only in that stamp.
 - **User-facing ranges use a real en-dash (U+2013, `–`), never a hyphen** — e.g. `"165–180 lbs x 1–5"`. Tests assert the exact bytes; see the convention note in `docs/plans/` if editing range formatting.
 - **`prs.json` keys must exactly match exercise names in `data/program.json`** (`choices` arrays) or the exercise gets no PR and no weight targets. Values are estimated 1RMs in lbs; per-hand for dumbbell moves (e.g. lateral raises), never doubled.
 - **Adding a dependency touches the Dockerfile** — it copies only `go.mod` (no `go.sum` exists).
