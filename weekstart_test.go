@@ -65,8 +65,14 @@ func TestApplyWeekStart_DoesNotMutateInput(t *testing.T) {
 	if _, err := applyWeekStart(program, "Sunday"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if program["1"].Label != "original-1" {
-		t.Errorf("input program mutated: day 1 label = %q", program["1"].Label)
+	for i := 1; i <= 7; i++ {
+		key := strconv.Itoa(i)
+		if program[key].Label != fmt.Sprintf("original-%d", i) {
+			t.Errorf("input program mutated: day %s label = %q", key, program[key].Label)
+		}
+		if program[key].Name != fmt.Sprintf("Workout %d", i) {
+			t.Errorf("input program mutated: day %s name = %q", key, program[key].Name)
+		}
 	}
 }
 
