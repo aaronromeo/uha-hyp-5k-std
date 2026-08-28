@@ -29,6 +29,11 @@ func main() {
 		log.Fatalf("failed to load program.json: %v", err)
 	}
 
+	program, err = applyWeekStart(program, os.Getenv("WEEK_START"))
+	if err != nil {
+		log.Fatalf("failed to apply WEEK_START: %v", err)
+	}
+
 	prs, err := loadPRs(dataDir + "/prs.json")
 	if err != nil {
 		log.Fatalf("failed to load prs.json: %v", err)

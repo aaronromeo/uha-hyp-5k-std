@@ -4,7 +4,7 @@ Workout generator web app. Single Go package, stdlib only (`go.mod` has zero dep
 
 ## Commands
 
-- Run: `go run .` — serves on `:8080` (override with `PORT`), reads `data/` (override with `DATA_DIR`).
+- Run: `go run .` — serves on `:8080` (override with `PORT`), reads `data/` (override with `DATA_DIR`). `WEEK_START=<weekday>` relabels days 1–7 so day 1 starts the week on that weekday (unset: labels from `data/program.json` win); takes effect at restart.
 - Full check: `go build ./... && go vet ./... && go test ./... && gofmt -l .`
 - `gofmt -l .` has a pre-existing dirty baseline: it lists `generate.go`, `types.go`, and three test files (space-indent/alignment drift). You didn't break it — don't mass-reformat inside feature diffs, just don't add new violations.
 - Single test: `go test -run TestName .` (no fixtures or services needed; handler tests read `templates/` from disk, so run from repo root).
