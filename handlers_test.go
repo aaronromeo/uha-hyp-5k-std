@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func newTestApp(program Program, prs PRs) *App {
@@ -15,6 +16,7 @@ func newTestApp(program Program, prs PRs) *App {
 		program:   program,
 		prs:       prs,
 		templates: tmpl,
+		now:       func() time.Time { return testDate },
 	}
 }
 
@@ -208,4 +210,37 @@ func TestWorkoutHandlerRendersRange(t *testing.T) {
     if !containsStr(body, "165–180 lbs x 1–5") {
         t.Errorf("expected '165–180 lbs x 1–5' in HTML body\n\nBody:\n%s", body)
     }
+}
+
+func TestWorkoutHandlerDateStamp(t *testing.T) {
+	app := newTestApp(
+		Program{
+			"1": ProgramDay{
+				Label: "Saturday",
+				Name:  "Upper Push",
+				Strength: []Slot{
+					{
+						Name:    "Secondary Push",
+						Method:  "ME",
+						Sets:    1,
+						Reps:    Range{Min: 1, Max: 5},
+						LoadPct: RangeF{Min: 0.90, Max: 1.00},
+						Choices: []string{"Incline Bench Press"},
+					},
+				},
+			},
+		},
+		PRs{"Incline Bench Press": 181},
+	)
+
+	req := httptest.NewRequest("GET", "/workout?day=1&seed=fixed", nil)
+	rr := httptest.NewRecorder()
+	app.handleWorkout(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if !containsStr(rr.Body.String(), "Day 1 — Saturday - 20260829") {
+		t.Errorf("expected stamped header in Obsidian output\n\nBody:\n%s", rr.Body.String())
+	}
 }

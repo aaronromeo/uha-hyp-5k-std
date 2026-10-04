@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 )
 
 // ---- pickExercise ----
@@ -336,6 +337,8 @@ func TestFormatSetTargetLine(t *testing.T) {
 
 // ---- formatObsidianText ----
 
+var testDate = time.Date(2026, 8, 29, 0, 0, 0, 0, time.UTC)
+
 func TestFormatObsidianText(t *testing.T) {
 	w := GeneratedWorkout{
 		Day: "1", Label: "Saturday",
@@ -369,10 +372,10 @@ func TestFormatObsidianText(t *testing.T) {
 		Endurance: &Endurance{Type: "Sprint+MLSS", Description: "Sprint + MLSS combo workout"},
 	}
 
-	text := formatObsidianText(w)
+	text := formatObsidianText(w, testDate)
 
 	mustContain := []string{
-		"Day 1 — Saturday",
+		"Day 1 — Saturday - 20260829",
 		"Lift: Upper Body Hypertrophy — Push Primary",
 		"Incline Bench Press: Ramping",
 		"Warm-up Set 1",
@@ -406,7 +409,7 @@ func TestFormatObsidianTextMissingPR(t *testing.T) {
 			},
 		},
 	}
-	text := formatObsidianText(w)
+	text := formatObsidianText(w, testDate)
 	if !containsStr(text, "No PR recorded") {
 		t.Errorf("expected 'No PR recorded' for missing PR\n\nFull output:\n%s", text)
 	}
@@ -431,7 +434,7 @@ func TestFormatObsidianTextSuperset(t *testing.T) {
 			},
 		},
 	}
-	text := formatObsidianText(w)
+	text := formatObsidianText(w, testDate)
 	if !containsStr(text, "Superset: Focused Push/Focused Pull") {
 		t.Errorf("expected superset header\n\nFull output:\n%s", text)
 	}

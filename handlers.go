@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // App holds the loaded config and parsed templates.
@@ -16,6 +17,7 @@ type App struct {
 	program   Program
 	prs       PRs
 	templates *template.Template
+	now       func() time.Time
 }
 
 // handleIndex renders the day picker page.
@@ -68,7 +70,7 @@ func (a *App) handleWorkout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	workout := generateWorkout(dayNum, day, a.prs, seed, overrides)
-	obsidianText := formatObsidianText(workout)
+	obsidianText := formatObsidianText(workout, a.now())
 
 	data := struct {
 		Workout      GeneratedWorkout
