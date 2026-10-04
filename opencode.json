@@ -3,10 +3,38 @@
 
   "permission": {
     "bash": {
-      "env *": "allow"
+      "env *": "allow",
+
+      "go *": "allow",
+      "go get*": "ask",
+      "gofmt *": "allow",
+
+      "git *": "allow",
+      "git push*": "ask",
+      "git reset --hard*": "ask",
+      "git clean*": "ask",
+
+      "gh auth status": "allow",
+
+      "rg *": "allow",
+      "sed -n *": "allow",
+      "mkdir *": "allow",
+
+      "rm uha-hyp-5k": "allow",
+      "rm -f uha-hyp-5k": "allow",
+      "rm -rf .scratch*": "allow",
+
+      "curl *localhost*": "allow",
+      "pkill -f /tmp/opencode/*": "allow"
+    },
+    "edit": {
+      "*.go": "allow"
+    },
+    "write": {
+      "*.go": "allow"
     },
     "external_directory": {
-      "/Users/aaron/workspace/zettelkasten/**": "allow"
+      "/home/aaron/workspace/zettelkasten/**": "allow"
     }
   }
 }
